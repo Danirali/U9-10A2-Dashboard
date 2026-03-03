@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zone Comparison</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #0a0a0a; color: #87CEEB; scroll-behavior: smooth; font-family: 'Inter', sans-serif;}
+        .sidebar { background-color: #000000; width: 260px; height: 100vh; position: fixed; top: 0; left: 0; border-right: 1px solid #222;}
+        .sidebar a { color: #FFFFFF; text-decoration: none; padding: 12px 20px; border-radius: 8px; margin-bottom: 5px; display: block; transition: 0.3s; }
+        .sidebar a:hover, .sidebar a.active { background-color: #87CEEB; color: #000000; font-weight: bold; }
+        .main-content { margin-left: 260px; padding: 40px; }
+        .figma-card { background: #121212; border-radius: 12px; border: 1px solid #222; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.3s, box-shadow 0.3s; }
+        .figma-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.8); border-color: #87CEEB; }
+        h1, h2, h3, h4, h5, h6, strong, span, p, td, th { color: #87CEEB !important; }
+        small { color: #FFFFFF; font-weight: 500; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .anim-up { animation: fadeUp 0.6s ease-out forwards; opacity: 0; }
+        .d-1 { animation-delay: 0.1s; } .d-2 { animation-delay: 0.2s; } .d-3 { animation-delay: 0.3s; }
+        .chart-wrapper { position: relative; height: 300px; width: 100%; }
+        .table-hover tbody tr:hover td { background-color: #1a1a1a; } table { border-color: #333 !important; }
+    </style>
+</head>
+<body>
+    <div class="sidebar p-4 d-flex flex-column">
+        <h4 style="color:#87CEEB" class="mb-0">AI Tracker</h4><small class="mb-4">Retail Analytics</small>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="zones.html" class="active">Zone Comparison</a>
+        <a href="statistics.html">Statistical Analysis</a>
+        <a href="export.html">Reports Export</a>
+        <a href="gdpr.html">GDPR Privacy Mode</a>
+    </div>
+
+    <div class="main-content">
+        <div class="mb-4 anim-up"><h2>Zone Comparison</h2><small>Comparative analysis across store zones</small></div>
+
+        <div class="row g-4 mb-4 anim-up d-1" id="zone-cards"></div>
+
+        <div class="row g-4 mb-4 anim-up d-2">
+            <div class="col-md-6"><div class="figma-card h-100"><h5 class="mb-4">Footfall & Dwell Time</h5><div class="chart-wrapper"><canvas id="barChart"></canvas></div></div></div>
+            <div class="col-md-6"><div class="figma-card h-100"><h5 class="mb-4">Multi-Metric Radar</h5><div class="chart-wrapper"><canvas id="radarChart"></canvas></div></div></div>
+        </div>
+
+        <div class="figma-card anim-up d-3">
+            <h5 class="mb-4">Detailed Zone Metrics</h5>
+            <div class="table-responsive"><table class="table table-hover table-dark align-middle bg-transparent">
+                <thead><tr><th>Zone</th><th>Footfall</th><th>Dwell Time (min)</th><th>Conversion %</th><th>Engagement</th></tr></thead>
+                <tbody id="zone-table-body"></tbody>
+            </table></div>
+        </div>
+    </div>
+
+    <script>
+        Chart.defaults.color = '#FFFFFF'; Chart.defaults.borderColor = '#222222';
+        async function loadZoneData() {
+            const res = await fetch('dashboard_data.json');
+            const result = await res.json();
+            if (result.status === "success") {
+                const zones = result.data.zones; const labels = Object.keys(zones);
+                let cardsHtml = ''; let tableHtml = '';
+                labels.forEach(zone => {
+                    const data = zones[zone];
+                    cardsHtml += `<div class="col-md-4"><div class="figma-card border-top border-4" style="border-top-color: #98FF98 !important;"><h5 class="mb-3">${zone}</h5><div class="d-flex justify-content-between mb-2"><small>Footfall</small><strong>${data.footfall}</strong></div><div class="d-flex justify-content-between mb-2"><small>Dwell Time</small><strong style="color: #98FF98 !important;">${data.dwell_min} min</strong></div><div class="d-flex justify-content-between"><small>Conversion</small><strong style="color: #98FF98 !important;">${data.conversion_rate}%</strong></div></div></div>`;
+                    tableHtml += `<tr><td>${zone}</td><td>${data.footfall}</td><td>${data.dwell_min}</td><td>${data.conversion_rate}%</td><td>${data.engagement}/100</td></tr>`;
+                });
+                document.getElementById('zone-cards').innerHTML = cardsHtml; document.getElementById('zone-table-body').innerHTML = tableHtml;
+
+                new Chart(document.getElementById('barChart').getContext('2d'), {
+                    type: 'bar',
+                    data: { labels: labels, datasets: [{ label: 'Footfall', data: labels.map(z => zones[z].footfall), backgroundColor: '#98FF98', borderRadius: 4 }, { label: 'Dwell (min) x10', data: labels.map(z => zones[z].dwell_min * 10), backgroundColor: '#87CEEB', borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                new Chart(document.getElementById('radarChart').getContext('2d'), {
+                    type: 'radar',
+                    data: { labels: ['Footfall', 'Dwell Time', 'Engagement', 'Conversion'], datasets: labels.map((zone, i) => ({ label: zone, data: [zones[zone].footfall / 10, zones[zone].dwell_min, zones[zone].engagement, zones[zone].conversion_rate], backgroundColor: i===0?'rgba(152, 255, 152, 0.2)':(i===1?'rgba(135, 206, 235, 0.2)':'rgba(255, 255, 255, 0.2)'), borderColor: i===0?'#98FF98':(i===1?'#87CEEB':'#FFFFFF'), borderWidth: 2 })) },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: '#333' }, angleLines: { color: '#333' }, pointLabels: { color: '#87CEEB' } } } }
+                });
+            }
+        }
+        loadZoneData();
+    </script>
+</body>
+</html>
