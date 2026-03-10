@@ -15,9 +15,6 @@
         .figma-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.8); border-color: #87CEEB; }
         h1, h2, h3, h4, h5, h6, strong, span, p, td, th { color: #87CEEB !important; }
         small { color: #FFFFFF; font-weight: 500; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .anim-up { animation: fadeUp 0.6s ease-out forwards; opacity: 0; }
-        .d-1 { animation-delay: 0.1s; } .d-2 { animation-delay: 0.2s; } .d-3 { animation-delay: 0.3s; }
         .chart-wrapper { position: relative; height: 300px; width: 100%; }
         .table-hover tbody tr:hover td { background-color: #1a1a1a; } table { border-color: #333 !important; }
     </style>
@@ -33,19 +30,19 @@
     </div>
 
     <div class="main-content">
-        <div class="mb-4 anim-up"><h2>Zone Comparison</h2><small>Comparative analysis of raw detection logs</small></div>
+        <div class="mb-4"><h2>Zone Comparison</h2><small>Comparative analysis from CSV data source</small></div>
 
-        <div class="row g-4 mb-4 anim-up d-1" id="zone-cards"></div>
+        <div class="row g-4 mb-4" id="zone-cards"></div>
 
-        <div class="row g-4 mb-4 anim-up d-2">
+        <div class="row g-4 mb-4">
             <div class="col-md-6"><div class="figma-card h-100"><h5 class="mb-4">Footfall & Dwell Velocity</h5><div class="chart-wrapper"><canvas id="barChart"></canvas></div></div></div>
             <div class="col-md-6"><div class="figma-card h-100"><h5 class="mb-4">Metric Synthesis Radar</h5><div class="chart-wrapper"><canvas id="radarChart"></canvas></div></div></div>
         </div>
 
-        <div class="figma-card anim-up d-3">
+        <div class="figma-card">
             <h5 class="mb-4">Aggregated Zone Metrics (Task 4)</h5>
             <div class="table-responsive"><table class="table table-hover table-dark align-middle bg-transparent">
-                <thead><tr><th>Zone</th><th>Total Detections</th><th>Avg Dwell (s)</th><th>Avg AI Confidence %</th><th>Avg Engagement Score</th></tr></thead>
+                <thead><tr><th>Zone</th><th>Detections</th><th>Avg Dwell (s)</th><th>Avg AI Conf %</th><th>Avg Engagement</th></tr></thead>
                 <tbody id="zone-table-body"></tbody>
             </table></div>
         </div>
@@ -53,30 +50,46 @@
 
     <script>
         Chart.defaults.color = '#FFFFFF'; Chart.defaults.borderColor = '#222222';
-        
-        async function loadZoneData() {
-            // Fetch the raw array from footfall_data.json
-            const res = await fetch('footfall_data.json');
-            const rawData = await res.json();
-            
-            // AGGREGATION LOGIC: Process raw logs into zone summaries
-            const zoneStats = {};
 
-            rawData.forEach(entry => {
-                const z = entry.Zone;
+        // Helper function to convert CSV text to an Array of Objects
+        function csvToJSON(csv) {
+            const lines = csv.trim().split("\n");
+            const result = [];
+            const headers = lines[0].split(",").map(h => h.trim());
+
+            for (let i = 1; i < lines.length; i++) {
+                const obj = {};
+                const currentline = lines[i].split(",");
+                headers.forEach((header, index) => {
+                    obj[header] = currentline[index].trim();
+                });
+                result.push(obj);
+            }
+            return result;
+        }
+
+        async function loadZoneData() {
+            // 1. Fetch data as TEXT instead of JSON
+            const res = await fetch('footfall_data.csv');
+            const csvText = await res.text();
+            
+            // 2. Parse CSV text
+            const rawData = csvToJSON(csvText);
+            
+            // 3. Aggregate Data
+            const zoneStats = {};
+            rawData.forEach(row => {
+                const z = row.Zone;
                 if (!zoneStats[z]) {
                     zoneStats[z] = { count: 0, sumDwell: 0, sumConf: 0, sumEngage: 0 };
                 }
                 zoneStats[z].count++;
-                zoneStats[z].sumDwell += entry.DwellTime_s;
-                zoneStats[z].sumConf += entry.AI_Confidence;
-                zoneStats[z].sumEngage += entry.EngagementScore;
+                zoneStats[z].sumDwell += parseFloat(row.DwellTime_s);
+                zoneStats[z].sumConf += parseFloat(row.AI_Confidence);
+                zoneStats[z].sumEngage += parseFloat(row.EngagementScore);
             });
 
             const labels = Object.keys(zoneStats);
-            let cardsHtml = ''; let tableHtml = '';
-            
-            // Prepare data for charts
             const finalData = labels.map(z => {
                 const s = zoneStats[z];
                 return {
@@ -84,50 +97,42 @@
                     footfall: s.count,
                     dwell_s: (s.sumDwell / s.count).toFixed(2),
                     avg_conf: ((s.sumConf / s.count) * 100).toFixed(1),
-                    engagement_score: (s.sumEngage / s.count).toFixed(2)
+                    engagement: (s.sumEngage / s.count).toFixed(2)
                 };
             });
 
-            finalData.forEach(data => {
-                cardsHtml += `<div class="col-md-4"><div class="figma-card border-top border-4" style="border-top-color: #98FF98 !important;"><h5 class="mb-3">${data.name}</h5><div class="d-flex justify-content-between mb-2"><small>Detections</small><strong>${data.footfall}</strong></div><div class="d-flex justify-content-between mb-2"><small>Avg. Dwell</small><strong style="color: #98FF98 !important;">${data.dwell_s}s</strong></div><div class="d-flex justify-content-between"><small>Avg. AI Conf.</small><strong style="color: #98FF98 !important;">${data.avg_conf}%</strong></div></div></div>`;
-                tableHtml += `<tr><td>${data.name}</td><td>${data.footfall}</td><td>${data.dwell_s}</td><td>${data.avg_conf}%</td><td>${data.engagement_score}/100</td></tr>`;
+            // 4. Update UI
+            let cardsHtml = ''; let tableHtml = '';
+            finalData.forEach(d => {
+                cardsHtml += `<div class="col-md-4"><div class="figma-card border-top border-4" style="border-top-color: #98FF98 !important;"><h5 class="mb-3">${d.name}</h5><div class="d-flex justify-content-between mb-2"><small>Detections</small><strong>${d.footfall}</strong></div><div class="d-flex justify-content-between mb-2"><small>Avg. Dwell</small><strong style="color: #98FF98 !important;">${d.dwell_s}s</strong></div><div class="d-flex justify-content-between"><small>Avg. Conf.</small><strong style="color: #98FF98 !important;">${d.avg_conf}%</strong></div></div></div>`;
+                tableHtml += `<tr><td>${d.name}</td><td>${d.footfall}</td><td>${d.dwell_s}</td><td>${d.avg_conf}%</td><td>${d.engagement}</td></tr>`;
             });
-            
-            document.getElementById('zone-cards').innerHTML = cardsHtml; 
+            document.getElementById('zone-cards').innerHTML = cardsHtml;
             document.getElementById('zone-table-body').innerHTML = tableHtml;
 
-            // BAR CHART
+            // 5. Render Charts
             new Chart(document.getElementById('barChart').getContext('2d'), {
                 type: 'bar',
-                data: { 
-                    labels: labels, 
+                data: {
+                    labels: labels,
                     datasets: [
-                        { label: 'Detections', data: finalData.map(d => d.footfall), backgroundColor: '#98FF98', borderRadius: 4 }, 
-                        { label: 'Avg Dwell (s)', data: finalData.map(d => d.dwell_s), backgroundColor: '#87CEEB', borderRadius: 4 }
-                    ] 
-                },
-                options: { responsive: true, maintainAspectRatio: false }
+                        { label: 'Detections', data: finalData.map(d => d.footfall), backgroundColor: '#98FF98' },
+                        { label: 'Avg Dwell (s)', data: finalData.map(d => d.dwell_s), backgroundColor: '#87CEEB' }
+                    ]
+                }
             });
 
-            // RADAR CHART
             new Chart(document.getElementById('radarChart').getContext('2d'), {
                 type: 'radar',
-                data: { 
-                    labels: ['Detections', 'Dwell Time', 'Engagement', 'AI Confidence'], 
-                    datasets: finalData.map((d, i) => ({ 
-                        label: d.name, 
-                        data: [
-                            d.footfall / 2, // Scaled for visibility
-                            d.dwell_s / 5, 
-                            d.engagement_score, 
-                            d.avg_conf
-                        ], 
-                        backgroundColor: i===0?'rgba(152, 255, 152, 0.2)':(i===1?'rgba(135, 206, 235, 0.2)':'rgba(255, 255, 255, 0.2)'), 
-                        borderColor: i===0?'#98FF98':(i===1?'#87CEEB':'#FFFFFF'), 
-                        borderWidth: 2 
-                    })) 
-                },
-                options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: '#333' }, angleLines: { color: '#333' }, pointLabels: { color: '#87CEEB' } } } }
+                data: {
+                    labels: ['Detections', 'Dwell Time', 'Engagement', 'AI Confidence'],
+                    datasets: finalData.map((d, i) => ({
+                        label: d.name,
+                        data: [d.footfall/2, d.dwell_s/5, d.engagement, d.avg_conf],
+                        borderColor: i === 0 ? '#98FF98' : '#87CEEB',
+                        backgroundColor: 'rgba(135, 206, 235, 0.1)'
+                    }))
+                }
             });
         }
         loadZoneData();
