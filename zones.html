@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Zone Comparison</title>
+    <title>Zone Comparison | AI Footfall Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -24,7 +24,7 @@
 </head>
 <body>
     <div class="sidebar p-4 d-flex flex-column">
-        <h4 style="color:#87CEEB" class="mb-0">AI Tracker</h4><small class="mb-4">Retail Analytics</small>
+        <h4 style="color:#87CEEB" class="mb-0">AI Tracker</h4><small class="mb-4">Unit 10 Retail Analytics</small>
         <a href="dashboard.html">Dashboard</a>
         <a href="zones.html" class="active">Zone Comparison</a>
         <a href="statistics.html">Statistical Analysis</a>
@@ -33,19 +33,19 @@
     </div>
 
     <div class="main-content">
-        <div class="mb-4 anim-up"><h2>Zone Comparison</h2><small>Comparative analysis across store zones</small></div>
+        <div class="mb-4 anim-up"><h2>Zone Comparison</h2><small>Comparative analysis of real-time AI detections</small></div>
 
         <div class="row g-4 mb-4 anim-up d-1" id="zone-cards"></div>
 
         <div class="row g-4 mb-4 anim-up d-2">
-            <div class="col-md-6"><div class="figma-card h-100"><h5 class="mb-4">Footfall & Dwell Time</h5><div class="chart-wrapper"><canvas id="barChart"></canvas></div></div></div>
-            <div class="col-md-6"><div class="figma-card h-100"><h5 class="mb-4">Multi-Metric Radar</h5><div class="chart-wrapper"><canvas id="radarChart"></canvas></div></div></div>
+            <div class="col-md-6"><div class="figma-card h-100"><h5 class="mb-4">Footfall & Dwell Velocity</h5><div class="chart-wrapper"><canvas id="barChart"></canvas></div></div></div>
+            <div class="col-md-6"><div class="figma-card h-100"><h5 class="mb-4">Metric Synthesis Radar</h5><div class="chart-wrapper"><canvas id="radarChart"></canvas></div></div></div>
         </div>
 
         <div class="figma-card anim-up d-3">
-            <h5 class="mb-4">Detailed Zone Metrics</h5>
+            <h5 class="mb-4">Cleansed Data Metrics (Task 4)</h5>
             <div class="table-responsive"><table class="table table-hover table-dark align-middle bg-transparent">
-                <thead><tr><th>Zone</th><th>Footfall</th><th>Dwell Time (min)</th><th>Conversion %</th><th>Engagement</th></tr></thead>
+                <thead><tr><th>Zone</th><th>Detection Count</th><th>Dwell Time (s)</th><th>AI Confidence %</th><th>Engagement Score</th></tr></thead>
                 <tbody id="zone-table-body"></tbody>
             </table></div>
         </div>
@@ -54,27 +54,56 @@
     <script>
         Chart.defaults.color = '#FFFFFF'; Chart.defaults.borderColor = '#222222';
         async function loadZoneData() {
+            // Adapted for the dashboard_data.json structure used in our Python scripts
             const res = await fetch('dashboard_data.json');
             const result = await res.json();
+            
             if (result.status === "success") {
-                const zones = result.data.zones; const labels = Object.keys(zones);
+                const zones = result.data.zones; 
+                const labels = Object.keys(zones);
                 let cardsHtml = ''; let tableHtml = '';
+                
                 labels.forEach(zone => {
                     const data = zones[zone];
-                    cardsHtml += `<div class="col-md-4"><div class="figma-card border-top border-4" style="border-top-color: #98FF98 !important;"><h5 class="mb-3">${zone}</h5><div class="d-flex justify-content-between mb-2"><small>Footfall</small><strong>${data.footfall}</strong></div><div class="d-flex justify-content-between mb-2"><small>Dwell Time</small><strong style="color: #98FF98 !important;">${data.dwell_min} min</strong></div><div class="d-flex justify-content-between"><small>Conversion</small><strong style="color: #98FF98 !important;">${data.conversion_rate}%</strong></div></div></div>`;
-                    tableHtml += `<tr><td>${zone}</td><td>${data.footfall}</td><td>${data.dwell_min}</td><td>${data.conversion_rate}%</td><td>${data.engagement}/100</td></tr>`;
+                    // Mapping previous Dwell_Min to DwellTime_s and Conversion to AI_Confidence
+                    cardsHtml += `<div class="col-md-4"><div class="figma-card border-top border-4" style="border-top-color: #98FF98 !important;"><h5 class="mb-3">${zone}</h5><div class="d-flex justify-content-between mb-2"><small>Detections</small><strong>${data.footfall}</strong></div><div class="d-flex justify-content-between mb-2"><small>Avg. Dwell</small><strong style="color: #98FF98 !important;">${data.dwell_s}s</strong></div><div class="d-flex justify-content-between"><small>AI Confidence</small><strong style="color: #98FF98 !important;">${data.avg_conf}%</strong></div></div></div>`;
+                    tableHtml += `<tr><td>${zone}</td><td>${data.footfall}</td><td>${data.dwell_s}</td><td>${data.avg_conf}%</td><td>${data.engagement_score}/100</td></tr>`;
                 });
-                document.getElementById('zone-cards').innerHTML = cardsHtml; document.getElementById('zone-table-body').innerHTML = tableHtml;
+                
+                document.getElementById('zone-cards').innerHTML = cardsHtml; 
+                document.getElementById('zone-table-body').innerHTML = tableHtml;
 
+                // BAR CHART: Comparative View
                 new Chart(document.getElementById('barChart').getContext('2d'), {
                     type: 'bar',
-                    data: { labels: labels, datasets: [{ label: 'Footfall', data: labels.map(z => zones[z].footfall), backgroundColor: '#98FF98', borderRadius: 4 }, { label: 'Dwell (min) x10', data: labels.map(z => zones[z].dwell_min * 10), backgroundColor: '#87CEEB', borderRadius: 4 }] },
+                    data: { 
+                        labels: labels, 
+                        datasets: [
+                            { label: 'Detections', data: labels.map(z => zones[z].footfall), backgroundColor: '#98FF98', borderRadius: 4 }, 
+                            { label: 'Avg Dwell (s)', data: labels.map(z => zones[z].dwell_s), backgroundColor: '#87CEEB', borderRadius: 4 }
+                        ] 
+                    },
                     options: { responsive: true, maintainAspectRatio: false }
                 });
 
+                // RADAR CHART: Synthesis of Non-Routine Operations
                 new Chart(document.getElementById('radarChart').getContext('2d'), {
                     type: 'radar',
-                    data: { labels: ['Footfall', 'Dwell Time', 'Engagement', 'Conversion'], datasets: labels.map((zone, i) => ({ label: zone, data: [zones[zone].footfall / 10, zones[zone].dwell_min, zones[zone].engagement, zones[zone].conversion_rate], backgroundColor: i===0?'rgba(152, 255, 152, 0.2)':(i===1?'rgba(135, 206, 235, 0.2)':'rgba(255, 255, 255, 0.2)'), borderColor: i===0?'#98FF98':(i===1?'#87CEEB':'#FFFFFF'), borderWidth: 2 })) },
+                    data: { 
+                        labels: ['Detections', 'Dwell Time', 'Engagement', 'AI Confidence'], 
+                        datasets: labels.map((zone, i) => ({ 
+                            label: zone, 
+                            data: [
+                                zones[zone].footfall / 10, // Scaled for radar view
+                                zones[zone].dwell_s / 5, 
+                                zones[zone].engagement_score, 
+                                zones[zone].avg_conf
+                            ], 
+                            backgroundColor: i===0?'rgba(152, 255, 152, 0.2)':(i===1?'rgba(135, 206, 235, 0.2)':'rgba(255, 255, 255, 0.2)'), 
+                            borderColor: i===0?'#98FF98':(i===1?'#87CEEB':'#FFFFFF'), 
+                            borderWidth: 2 
+                        })) 
+                    },
                     options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: '#333' }, angleLines: { color: '#333' }, pointLabels: { color: '#87CEEB' } } } }
                 });
             }
