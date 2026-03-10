@@ -33,7 +33,7 @@
     </div>
 
     <div class="main-content">
-        <div class="mb-4 anim-up"><h2>Zone Comparison</h2><small>Comparative analysis of real-time AI detections</small></div>
+        <div class="mb-4 anim-up"><h2>Zone Comparison</h2><small>Comparative analysis of raw detection logs</small></div>
 
         <div class="row g-4 mb-4 anim-up d-1" id="zone-cards"></div>
 
@@ -43,9 +43,9 @@
         </div>
 
         <div class="figma-card anim-up d-3">
-            <h5 class="mb-4">Cleansed Data Metrics (Task 4)</h5>
+            <h5 class="mb-4">Aggregated Zone Metrics (Task 4)</h5>
             <div class="table-responsive"><table class="table table-hover table-dark align-middle bg-transparent">
-                <thead><tr><th>Zone</th><th>Detection Count</th><th>Dwell Time (s)</th><th>AI Confidence %</th><th>Engagement Score</th></tr></thead>
+                <thead><tr><th>Zone</th><th>Total Detections</th><th>Avg Dwell (s)</th><th>Avg AI Confidence %</th><th>Avg Engagement Score</th></tr></thead>
                 <tbody id="zone-table-body"></tbody>
             </table></div>
         </div>
@@ -53,65 +53,84 @@
 
     <script>
         Chart.defaults.color = '#FFFFFF'; Chart.defaults.borderColor = '#222222';
+        
         async function loadZoneData() {
-            // Adapted for the dashboard_data.json structure used in our Python scripts
+            // Fetch the raw array from footfall_data.json
             const res = await fetch('footfall_data.json');
-            const result = await res.json();
+            const rawData = await res.json();
             
-            if (result.status === "success") {
-                const zones = result.data.zones; 
-                const labels = Object.keys(zones);
-                let cardsHtml = ''; let tableHtml = '';
-                
-                labels.forEach(zone => {
-                    const data = zones[zone];
-                    // Mapping previous Dwell_Min to DwellTime_s and Conversion to AI_Confidence
-                    cardsHtml += `<div class="col-md-4"><div class="figma-card border-top border-4" style="border-top-color: #98FF98 !important;"><h5 class="mb-3">${zone}</h5><div class="d-flex justify-content-between mb-2"><small>Detections</small><strong>${data.footfall}</strong></div><div class="d-flex justify-content-between mb-2"><small>Avg. Dwell</small><strong style="color: #98FF98 !important;">${data.dwell_s}s</strong></div><div class="d-flex justify-content-between"><small>AI Confidence</small><strong style="color: #98FF98 !important;">${data.avg_conf}%</strong></div></div></div>`;
-                    tableHtml += `<tr><td>${zone}</td><td>${data.footfall}</td><td>${data.dwell_s}</td><td>${data.avg_conf}%</td><td>${data.engagement_score}/100</td></tr>`;
-                });
-                
-                document.getElementById('zone-cards').innerHTML = cardsHtml; 
-                document.getElementById('zone-table-body').innerHTML = tableHtml;
+            // AGGREGATION LOGIC: Process raw logs into zone summaries
+            const zoneStats = {};
 
-                // BAR CHART: Comparative View
-                new Chart(document.getElementById('barChart').getContext('2d'), {
-                    type: 'bar',
-                    data: { 
-                        labels: labels, 
-                        datasets: [
-                            { label: 'Detections', data: labels.map(z => zones[z].footfall), backgroundColor: '#98FF98', borderRadius: 4 }, 
-                            { label: 'Avg Dwell (s)', data: labels.map(z => zones[z].DwellTime_s), backgroundColor: '#87CEEB', borderRadius: 4 }
-                        ] 
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
+            rawData.forEach(entry => {
+                const z = entry.Zone;
+                if (!zoneStats[z]) {
+                    zoneStats[z] = { count: 0, sumDwell: 0, sumConf: 0, sumEngage: 0 };
+                }
+                zoneStats[z].count++;
+                zoneStats[z].sumDwell += entry.DwellTime_s;
+                zoneStats[z].sumConf += entry.AI_Confidence;
+                zoneStats[z].sumEngage += entry.EngagementScore;
+            });
 
-                // RADAR CHART: Synthesis of Non-Routine Operations
-                new Chart(document.getElementById('radarChart').getContext('2d'), {
-                    type: 'radar',
-                    data: { 
-                        labels: ['Detections', 'Dwell Time', 'Engagement', 'AI Confidence'], 
-                        datasets: labels.map((zone, i) => ({ 
-                            label: zone, 
-                            data: [
-                                zones[zone].footfall / 10, // Scaled for radar view
-                                zones[zone].DwellTime_s / 5, 
-                                zones[zone].engagement_score, 
-                                zones[zone].avg_conf
-                            ], 
-                            backgroundColor: i===0?'rgba(152, 255, 152, 0.2)':(i===1?'rgba(135, 206, 235, 0.2)':'rgba(255, 255, 255, 0.2)'), 
-                            borderColor: i===0?'#98FF98':(i===1?'#87CEEB':'#FFFFFF'), 
-                            borderWidth: 2 
-                        })) 
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: '#333' }, angleLines: { color: '#333' }, pointLabels: { color: '#87CEEB' } } } }
-                });
-            }
+            const labels = Object.keys(zoneStats);
+            let cardsHtml = ''; let tableHtml = '';
+            
+            // Prepare data for charts
+            const finalData = labels.map(z => {
+                const s = zoneStats[z];
+                return {
+                    name: z,
+                    footfall: s.count,
+                    dwell_s: (s.sumDwell / s.count).toFixed(2),
+                    avg_conf: ((s.sumConf / s.count) * 100).toFixed(1),
+                    engagement_score: (s.sumEngage / s.count).toFixed(2)
+                };
+            });
+
+            finalData.forEach(data => {
+                cardsHtml += `<div class="col-md-4"><div class="figma-card border-top border-4" style="border-top-color: #98FF98 !important;"><h5 class="mb-3">${data.name}</h5><div class="d-flex justify-content-between mb-2"><small>Detections</small><strong>${data.footfall}</strong></div><div class="d-flex justify-content-between mb-2"><small>Avg. Dwell</small><strong style="color: #98FF98 !important;">${data.dwell_s}s</strong></div><div class="d-flex justify-content-between"><small>Avg. AI Conf.</small><strong style="color: #98FF98 !important;">${data.avg_conf}%</strong></div></div></div>`;
+                tableHtml += `<tr><td>${data.name}</td><td>${data.footfall}</td><td>${data.dwell_s}</td><td>${data.avg_conf}%</td><td>${data.engagement_score}/100</td></tr>`;
+            });
+            
+            document.getElementById('zone-cards').innerHTML = cardsHtml; 
+            document.getElementById('zone-table-body').innerHTML = tableHtml;
+
+            // BAR CHART
+            new Chart(document.getElementById('barChart').getContext('2d'), {
+                type: 'bar',
+                data: { 
+                    labels: labels, 
+                    datasets: [
+                        { label: 'Detections', data: finalData.map(d => d.footfall), backgroundColor: '#98FF98', borderRadius: 4 }, 
+                        { label: 'Avg Dwell (s)', data: finalData.map(d => d.dwell_s), backgroundColor: '#87CEEB', borderRadius: 4 }
+                    ] 
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // RADAR CHART
+            new Chart(document.getElementById('radarChart').getContext('2d'), {
+                type: 'radar',
+                data: { 
+                    labels: ['Detections', 'Dwell Time', 'Engagement', 'AI Confidence'], 
+                    datasets: finalData.map((d, i) => ({ 
+                        label: d.name, 
+                        data: [
+                            d.footfall / 2, // Scaled for visibility
+                            d.dwell_s / 5, 
+                            d.engagement_score, 
+                            d.avg_conf
+                        ], 
+                        backgroundColor: i===0?'rgba(152, 255, 152, 0.2)':(i===1?'rgba(135, 206, 235, 0.2)':'rgba(255, 255, 255, 0.2)'), 
+                        borderColor: i===0?'#98FF98':(i===1?'#87CEEB':'#FFFFFF'), 
+                        borderWidth: 2 
+                    })) 
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { grid: { color: '#333' }, angleLines: { color: '#333' }, pointLabels: { color: '#87CEEB' } } } }
+            });
         }
         loadZoneData();
     </script>
 </body>
 </html>
-
-
-
