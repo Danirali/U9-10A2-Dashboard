@@ -54,7 +54,7 @@
     <script>
         Chart.defaults.color = '#FFFFFF'; Chart.defaults.borderColor = '#222222';
         async function loadData() {
-            const res = await fetch('dashboard_data.json');
+            const res = await fetch('footfall_data.json');
             const result = await res.json();
             if(result.status === "success") {
                 const data = result.data;
@@ -73,4 +73,5 @@
         loadData();
     </script>
 </body>
+
 </html>
