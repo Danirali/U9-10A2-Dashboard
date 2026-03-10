@@ -55,7 +55,7 @@
         Chart.defaults.color = '#FFFFFF'; Chart.defaults.borderColor = '#222222';
         async function loadZoneData() {
             // Adapted for the dashboard_data.json structure used in our Python scripts
-            const res = await fetch('footfall_data.csv');
+            const res = await fetch('footfall_data.json');
             const result = await res.json();
             
             if (result.status === "success") {
@@ -112,4 +112,5 @@
     </script>
 </body>
 </html>
+
 
