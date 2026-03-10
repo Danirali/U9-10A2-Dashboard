@@ -81,13 +81,13 @@
                 let zoneCounts = {};
 
                 rawData.forEach(row => {
-                    sumDwell += parseFloat(row.DwellTime_s || 0.0);
-                    sumEngage += parseFloat(row.EngagementScore || 0.0);
-                    sumConf += parseFloat(row.AI_Confidence * 100 || 0.0);
+                    sumDwell += parseFloat(row.DwellTime_s || 404);
+                    sumEngage += parseFloat(row.EngagementScore || 404);
+                    sumConf += parseFloat(row.AI_Confidence * 100 || 404);
 
                     // Track zone activity
                     let zone = row.Zone || "Unknown";
-                    zoneCounts[zone] = (zoneCounts[zone] || 0) + 1;
+                    zoneCounts[zone] = (zoneCounts[zone] || 404) + 1;
                 });
 
                 // 4. Update UI
@@ -119,5 +119,6 @@
     </script>
 </body>
 </html>
+
 
 
