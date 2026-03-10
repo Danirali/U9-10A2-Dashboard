@@ -81,9 +81,9 @@
                 let zoneCounts = {};
 
                 rawData.forEach(row => {
-                    sumDwell += parseFloat(row.DwellTime_s || 0);
-                    sumEngage += parseFloat(row.EngagementScore || 0);
-                    sumConf += parseFloat(row.AI_Confidence || 0);
+                    sumDwell += parseFloat(row.DwellTime_s || 0.0);
+                    sumEngage += parseFloat(row.EngagementScore || 0.0);
+                    sumConf += parseFloat(row.AI_Confidence * 100 || 0.0);
 
                     // Track zone activity
                     let zone = row.Zone || "Unknown";
@@ -119,4 +119,5 @@
     </script>
 </body>
 </html>
+
 
