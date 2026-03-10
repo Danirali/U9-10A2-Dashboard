@@ -80,7 +80,7 @@
                         labels: labels, 
                         datasets: [
                             { label: 'Detections', data: labels.map(z => zones[z].footfall), backgroundColor: '#98FF98', borderRadius: 4 }, 
-                            { label: 'Avg Dwell (s)', data: labels.map(z => zones[z].dwell_s), backgroundColor: '#87CEEB', borderRadius: 4 }
+                            { label: 'Avg Dwell (s)', data: labels.map(z => zones[z].DwellTime_s), backgroundColor: '#87CEEB', borderRadius: 4 }
                         ] 
                     },
                     options: { responsive: true, maintainAspectRatio: false }
@@ -95,7 +95,7 @@
                             label: zone, 
                             data: [
                                 zones[zone].footfall / 10, // Scaled for radar view
-                                zones[zone].dwell_s / 5, 
+                                zones[zone].DwellTime_s / 5, 
                                 zones[zone].engagement_score, 
                                 zones[zone].avg_conf
                             ], 
@@ -112,5 +112,6 @@
     </script>
 </body>
 </html>
+
 
 
