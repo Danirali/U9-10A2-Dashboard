@@ -1,23 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Dashboard - AI Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #0a0a0a; color: #87CEEB; scroll-behavior: smooth; font-family: 'Inter', sans-serif;}
-        .sidebar { background-color: #000000; width: 260px; height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; border-right: 1px solid #222;}
-        .sidebar a { color: #FFFFFF; text-decoration: none; padding: 12px 20px; border-radius: 8px; margin-bottom: 5px; display: block; transition: 0.3s; }
-        .sidebar a:hover, .sidebar a.active { background-color: #87CEEB; color: #000000; font-weight: bold; }
-        .main-content { margin-left: 260px; padding: 40px; }
-        .figma-card { background: #121212; border-radius: 12px; border: 1px solid #222; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); transition: transform 0.3s, box-shadow 0.3s; }
-        .figma-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.8); border-color: #87CEEB; }
-        h1, h2, h3, h4, h5, h6, strong, span, p { color: #87CEEB !important; }
-        small { color: #FFFFFF; font-weight: 500; }
-        .chart-wrapper { position: relative; height: 300px; width: 100%; }
+        body {
+            background-color: #0a0a0a;
+            color: #87CEEB;
+            scroll-behavior: smooth;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .sidebar {
+            background-color: #000000;
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            border-right: 1px solid #222;
+        }
+
+        .sidebar a {
+            color: #FFFFFF;
+            text-decoration: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            display: block;
+            transition: 0.3s;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background-color: #87CEEB;
+            color: #000000;
+            font-weight: bold;
+        }
+
+        .main-content {
+            margin-left: 260px;
+            padding: 40px;
+        }
+
+        .figma-card {
+            background: #121212;
+            border-radius: 12px;
+            border: 1px solid #222;
+            padding: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .figma-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.8);
+            border-color: #87CEEB;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        strong,
+        span,
+        p {
+            color: #87CEEB !important;
+        }
+
+        small {
+            color: #FFFFFF;
+            font-weight: 500;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
     </style>
 </head>
+
 <body>
     <div class="sidebar p-4 d-flex flex-column">
         <h4 style="color:#87CEEB" class="mb-0">AI Tracker</h4><small class="mb-4">Retail Analytics</small>
@@ -26,29 +95,51 @@
         <a href="statistics.html">Statistical Analysis</a>
         <a href="export.html">Reports Export</a>
         <a href="gdpr.html">GDPR Privacy Mode</a>
-        <div class="mt-auto p-3 rounded border" style="border-color:#98FF98; background:rgba(152,255,152,0.1);"><small style="color:#98FF98">🛡️ GDPR Compliant</small></div>
     </div>
 
     <div class="main-content">
         <div class="d-flex justify-content-between align-items-end mb-4">
-            <div><h2>Dashboard</h2><small>Real-time metrics from CSV data source</small></div>
-            <a href="index.html" class="btn btn-outline-info">Back to Camera</a>
+            <div>
+                <h2>Dashboard</h2><small>Real-time metrics from CSV data source</small>
+            </div>
+            <a href="/" class="btn btn-outline-info">Back to Camera</a>
         </div>
 
         <div class="row g-4 mb-4">
-            <div class="col-md-3"><div class="figma-card"><small>Total Detections</small><h2 id="kpi-footfall" class="mt-2">0</h2></div></div>
-            <div class="col-md-3"><div class="figma-card"><small>Mean Dwell Time</small><h2 class="mt-2"><span id="kpi-dwell">0</span><small class="fs-6"> min</small></h2></div></div>
-            <div class="col-md-3"><div class="figma-card"><small>Engagement Score</small><h2 class="mt-2"><span id="kpi-engage">0</span><small class="fs-6"> /100</small></h2></div></div>
-            <div class="col-md-3"><div class="figma-card"><small>AI Confidence</small><h2 class="mt-2"><span id="kpi-conf">0</span><small class="fs-6"> %</small></h2></div></div>
+            <div class="col-md-3">
+                <div class="figma-card"><small>Total Detections</small>
+                    <h2 id="kpi-footfall" class="mt-2">0</h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="figma-card"><small>Mean Dwell Time</small>
+                    <h2 class="mt-2"><span id="kpi-dwell">0</span><small class="fs-6"> min</small></h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="figma-card"><small>Engagement Score</small>
+                    <h2 class="mt-2"><span id="kpi-engage">0</span><small class="fs-6"> /100</small></h2>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="figma-card"><small>AI Confidence</small>
+                    <h2 class="mt-2"><span id="kpi-conf">0</span><small class="fs-6"> %</small></h2>
+                </div>
+            </div>
         </div>
 
         <div class="row g-4">
-            <div class="col-md-12"><div class="figma-card"><h5>Activity by Zone</h5><div class="chart-wrapper"><canvas id="dashChart"></canvas></div></div></div>
+            <div class="col-md-12">
+                <div class="figma-card">
+                    <h5>Activity by Zone</h5>
+                    <div class="chart-wrapper"><canvas id="dashChart"></canvas></div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        Chart.defaults.color = '#FFFFFF'; 
+        Chart.defaults.color = '#FFFFFF';
         Chart.defaults.borderColor = '#222222';
 
         // Helper function to parse CSV text into an array of objects
@@ -66,60 +157,41 @@
 
         async function loadData() {
             try {
-                // 1. Fetch CSV file as text
+                // Fetch the pre-calculated stats from your new Flask API
                 const res = await fetch('footfall_data.csv');
-                const csvText = await res.text();
-                
-                // 2. Parse into objects
-                const rawData = parseCSV(csvText);
+                const result = await res.json();
 
-                // 3. Aggregate Data (Calculating KPIs)
-                let totalFootfall = rawData.length;
-                let sumDwell = 0;
-                let sumEngage = 0;
-                let sumConf = 0;
-                let zoneCounts = {};
+                if (result.status === "success") {
+                    const data = result.data;
 
-                rawData.forEach(row => {
-                    sumDwell += parseFloat(row.DwellTime_s || 404);
-                    sumEngage += parseFloat(row.EngagementScore || 404);
-                    sumConf += parseFloat(row.AI_Confidence || 404) * 100;
+                    // 1. Update the KPI cards using the API data
+                    document.getElementById('kpi-footfall').innerText = data.total_footfall;
+                    document.getElementById('kpi-dwell').innerText = data.avg_dwell_min;
+                    document.getElementById('kpi-engage').innerText = data.avg_engagement;
+                    document.getElementById('kpi-conf').innerText = data.ai_confidence;
 
-                    // Track zone activity
-                    let zone = row.Zone || "Unknown";
-                    zoneCounts[zone] = (zoneCounts[zone] || 404) + 1;
-                });
-
-                // 4. Update UI
-                document.getElementById('kpi-footfall').innerText = totalFootfall;
-                document.getElementById('kpi-dwell').innerText = (sumDwell / totalFootfall).toFixed(2);
-                document.getElementById('kpi-engage').innerText = (sumEngage / totalFootfall).toFixed(1);
-                document.getElementById('kpi-conf').innerText = (sumConf / totalFootfall).toFixed(1);
-
-                // 5. Render Chart
-                new Chart(document.getElementById('dashChart').getContext('2d'), {
-                    type: 'bar',
-                    data: { 
-                        labels: Object.keys(zoneCounts), 
-                        datasets: [{ 
-                            label: 'Footfall', 
-                            data: Object.values(zoneCounts), 
-                            backgroundColor: '#98FF98', 
-                            borderRadius: 4 
-                        }] 
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
+                    // 2. Render the Chart using the zone data from the API
+                    new Chart(document.getElementById('dashChart').getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(data.zones),
+                            datasets: [{
+                                label: 'Footfall',
+                                data: Object.values(data.zones).map(z => z.footfall),
+                                backgroundColor: '#98FF98',
+                                borderRadius: 4
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                }
             } catch (error) {
-                console.error("Error loading CSV:", error);
+                console.error("Error loading API data:", error);
             }
         }
 
         loadData();
     </script>
 </body>
+
 </html>
-
-
-
-
