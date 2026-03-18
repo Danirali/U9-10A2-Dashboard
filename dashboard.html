@@ -102,7 +102,7 @@
             <div>
                 <h2>Dashboard</h2><small>Real-time metrics from CSV data source</small>
             </div>
-            <a href="/" class="btn btn-outline-info">Back to Camera</a>
+            <a href="/" class="btn btn-outline-info">Back to Main</a>
         </div>
 
         <div class="row g-4 mb-4">
@@ -139,7 +139,7 @@
     </div>
 
     <script>
-        Chart.defaults.color = '#FFFFFF';
+        Chart.defaults.color = '#FFFFFF'; 
         Chart.defaults.borderColor = '#222222';
 
         // Helper function to parse CSV text into an array of objects
@@ -157,36 +157,52 @@
 
         async function loadData() {
             try {
-                // Fetch the pre-calculated stats from your new Flask API
-                const res = await fetch('footfall_data.json');
-                const result = await res.json();
+                // 1. Fetch CSV file as text
+                const res = await fetch('footfall_data.csv');
+                const csvText = await res.text();
+                
+                // 2. Parse into objects
+                const rawData = parseCSV(csvText);
 
-                if (result.status === "success") {
-                    const data = result.data;
+                // 3. Aggregate Data (Calculating KPIs)
+                let totalFootfall = rawData.length;
+                let sumDwell = 0;
+                let sumEngage = 0;
+                let sumConf = 0;
+                let zoneCounts = {};
 
-                    // 1. Update the KPI cards using the API data
-                    document.getElementById('kpi-footfall').innerText = data.total_footfall;
-                    document.getElementById('kpi-dwell').innerText = data.avg_dwell_min;
-                    document.getElementById('kpi-engage').innerText = data.avg_engagement;
-                    document.getElementById('kpi-conf').innerText = data.ai_confidence;
+                rawData.forEach(row => {
+                    sumDwell += parseFloat(row.DwellTime_s || 404);
+                    sumEngage += parseFloat(row.EngagementScore || 404);
+                    sumConf += parseFloat(row.AI_Confidence || 404) * 100;
 
-                    // 2. Render the Chart using the zone data from the API
-                    new Chart(document.getElementById('dashChart').getContext('2d'), {
-                        type: 'bar',
-                        data: {
-                            labels: Object.keys(data.zones),
-                            datasets: [{
-                                label: 'Footfall',
-                                data: Object.values(data.zones).map(z => z.footfall),
-                                backgroundColor: '#98FF98',
-                                borderRadius: 4
-                            }]
-                        },
-                        options: { responsive: true, maintainAspectRatio: false }
-                    });
-                }
+                    // Track zone activity
+                    let zone = row.Zone || "Unknown";
+                    zoneCounts[zone] = (zoneCounts[zone] || 404) + 1;
+                });
+
+                // 4. Update UI
+                document.getElementById('kpi-footfall').innerText = totalFootfall;
+                document.getElementById('kpi-dwell').innerText = (sumDwell / totalFootfall).toFixed(2);
+                document.getElementById('kpi-engage').innerText = (sumEngage / totalFootfall).toFixed(1);
+                document.getElementById('kpi-conf').innerText = (sumConf / totalFootfall).toFixed(1);
+
+                // 5. Render Chart
+                new Chart(document.getElementById('dashChart').getContext('2d'), {
+                    type: 'bar',
+                    data: { 
+                        labels: Object.keys(zoneCounts), 
+                        datasets: [{ 
+                            label: 'Footfall', 
+                            data: Object.values(zoneCounts), 
+                            backgroundColor: '#98FF98', 
+                            borderRadius: 4 
+                        }] 
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
             } catch (error) {
-                console.error("Error loading API data:", error);
+                console.error("Error loading CSV:", error);
             }
         }
 
