@@ -158,7 +158,7 @@
         async function loadData() {
             try {
                 // Fetch the pre-calculated stats from your new Flask API
-                const res = await fetch('footfall_data.csv');
+                const res = await fetch('footfall_data.json');
                 const result = await res.json();
 
                 if (result.status === "success") {
