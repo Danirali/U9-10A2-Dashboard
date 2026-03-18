@@ -69,14 +69,11 @@
         }
 
         async function loadZoneData() {
-            // 1. Fetch data as TEXT instead of JSON
-            const res = await fetch("{{ url_for('static', filename='footfall_data.csv') }}");
+            const res = await fetch('footfall_data.csv');
             const csvText = await res.text();
             
-            // 2. Parse CSV text
             const rawData = csvToJSON(csvText);
             
-            // 3. Aggregate Data
             const zoneStats = {};
             rawData.forEach(row => {
                 const z = row.Zone;
